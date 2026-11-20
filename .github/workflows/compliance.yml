@@ -31,10 +31,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Lint
-        run: ruff check .
+        run: python -m ruff check .
 
       - name: Test
-        run: pytest -q
+        run: python -m pytest -q
 
       - name: Run demo assessment
         run: python -m cee assess --demo
