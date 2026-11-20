@@ -1,0 +1,48 @@
+# Control Evidence Engine - live configuration example.
+# Copy to cee.yaml and fill in what you have. Anything left blank is skipped.
+# Demo mode never reads this file.
+
+github:
+  org: your-github-org
+  repo: your-repo
+  # Token is read from the environment, never from this file.
+  token_env: GITHUB_TOKEN
+
+aws:
+  # Leave profile empty to use the default credential chain (env vars, SSO, role).
+  profile: ""
+  regions:
+    - ap-south-1
+    - us-east-1
+
+wazuh:
+  # File path or directory. A directory resolves to the newest *.json file.
+  alerts_path: ""
+  freshness_hours: 24
+
+sigma:
+  # Directory containing Sigma YAML rules (searched recursively).
+  rules_dir: ""
+  # Leave empty to use the built-in priority technique list.
+  required_techniques: []
+
+backup:
+  # Directory containing backup artifacts, or a single file.
+  path: ""
+  max_age_hours: 24
+  min_retention_days: 7
+
+trivy:
+  # Trivy JSON report path, or a directory containing reports.
+  report_path: ""
+  critical_sla_days: 7
+  high_sla_days: 30
+
+manual:
+  # Registry written by `python -m cee attest`.
+  registry: manual_evidence/index.json
+
+report:
+  organization: Acme SaaS
+  prepared_by: Security Engineering
+  reviewer: ""

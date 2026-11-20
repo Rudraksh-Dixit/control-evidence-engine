@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control Evidence Report - {{ run.framework_name }} - {{ run.run_id }}</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --muted: #5b6b82;
+    --line: #dfe6ef;
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --navy: #0b1f33;
+    --navy-2: #12314d;
+    --mint: #37d39b;
+    --green: #178a5c;
+    --green-bg: #e5f7ef;
+    --amber: #a86500;
+    --amber-bg: #fff3d6;
+    --red: #b42318;
+    --red-bg: #fdebea;
+    --blue: #175cd3;
+    --blue-bg: #e8f1ff;
+    --gray: #5b6b82;
+    --gray-bg: #eef2f7;
+    --purple: #6941c6;
+    --purple-bg: #f1ebff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 28px 34px 60px; }
+  .topbar {
+    display: flex; justify-content: space-between; gap: 20px; align-items: center;
+    background: var(--navy); color: #e8f1f8; border-radius: 14px;
+    padding: 20px 26px; margin-bottom: 22px;
+  }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 11px;
+    background: var(--mint); color: #04281d; font-weight: 800; letter-spacing: .5px;
+  }
+  .brand h1 { margin: 0; font-size: 19px; letter-spacing: .2px; }
+  .brand p { margin: 2px 0 0; color: #a9c2d6; font-size: 12px; }
+  .top-meta { text-align: right; font-size: 12px; color: #b7ccdd; }
+  .top-meta strong { color: #fff; font-size: 13px; }
+  .mode {
+    display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+    background: rgba(55,211,155,.15); color: var(--mint); border: 1px solid rgba(55,211,155,.35);
+    font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  }
+
+  .hero {
+    display: grid; grid-template-columns: 240px 1fr 260px; gap: 18px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px; margin-bottom: 22px;
+  }
+  .score-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-ring {
+    --ring: var(--mint);
+    width: 168px; height: 168px; border-radius: 50%;
+    background: conic-gradient(var(--ring) calc(var(--pct) * 1%), #e5ebf3 0);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(15,23,42,.04);
+  }
+  .score-ring.strong { --ring: #178a5c; }
+  .score-ring.moderate { --ring: #d18a00; }
+  .score-ring.weak { --ring: #c0392b; }
+  .score-ring.na { --ring: #93a4b8; }
+  .score-inner {
+    width: 132px; height: 132px; border-radius: 50%; background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; box-shadow: 0 0 0 1px var(--line);
+  }
+  .score-inner strong { font-size: 34px; line-height: 1; letter-spacing: -1px; }
+  .score-inner span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 6px; }
+  .band { margin-top: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: center; }
+  .kpi { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; }
+  .kpi b { display: block; font-size: 24px; line-height: 1.1; }
+  .kpi span { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .kpi.green b { color: var(--green); } .kpi.amber b { color: var(--amber); }
+  .kpi.red b { color: var(--red); } .kpi.blue b { color: var(--blue); }
+  .kpi.gray b { color: var(--gray); } .kpi.purple b { color: var(--purple); }
+
+  .side-meta { border-left: 1px solid var(--line); padding-left: 20px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .meta-row span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .meta-row strong { font-size: 13px; font-weight: 600; }
+
+  section { margin: 26px 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; letter-spacing: .2px; }
+  h2 .sub { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+
+  .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .theme-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .theme-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .theme-head h3 { margin: 0; font-size: 13px; }
+  .theme-head span { font-size: 12px; color: var(--muted); }
+  .bar { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: #e9eef5; margin-bottom: 9px; }
+  .bar i { display: block; height: 100%; }
+  .seg-compliant { background: #178a5c; } .seg-partial { background: #d18a00; }
+  .seg-non_compliant { background: #c0392b; } .seg-attested { background: #175cd3; }
+  .seg-manual { background: #b6c2d2; } .seg-error { background: #6941c6; }
+  .seg-not_applicable { background: #cfd8e3; }
+  .theme-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--muted); }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .dot.compliant { background: #178a5c; } .dot.partial { background: #d18a00; }
+  .dot.non_compliant { background: #c0392b; } .dot.attested { background: #175cd3; }
+  .dot.manual { background: #b6c2d2; } .dot.error { background: #6941c6; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); background: #f8fafc; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code, .mono { font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace; font-size: 11px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 11px; }
+  .break { word-break: break-all; }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .status-compliant { background: var(--green-bg); color: var(--green); }
+  .status-partial { background: var(--amber-bg); color: var(--amber); }
+  .status-non_compliant { background: var(--red-bg); color: var(--red); }
+  .status-manual { background: var(--gray-bg); color: var(--gray); }
+  .status-attested { background: var(--blue-bg); color: var(--blue); }
+  .status-not_applicable { background: var(--gray-bg); color: var(--gray); }
+  .status-error { background: var(--purple-bg); color: var(--purple); }
+  .status-pass { background: var(--green-bg); color: var(--green); }
+  .status-fail { background: var(--red-bg); color: var(--red); }
+  .severity-critical { background: #7a1d12; color: #fff; }
+  .severity-high { background: var(--red-bg); color: var(--red); }
+  .severity-medium { background: var(--amber-bg); color: var(--amber); }
+  .severity-low { background: var(--gray-bg); color: var(--gray); }
+  .severity-info { background: var(--blue-bg); color: var(--blue); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .filters button {
+    border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px;
+    padding: 6px 13px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .filters button.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .filters button:hover { border-color: #9db0c6; }
+
+  .control { background: var(--card); border: 1px solid var(--line); border-radius: 11px; margin-bottom: 9px; overflow: hidden; }
+  .control summary {
+    list-style: none; cursor: pointer; display: grid;
+    grid-template-columns: 76px 1fr auto 66px; gap: 12px; align-items: center;
+    padding: 13px 16px;
+  }
+  .control summary::-webkit-details-marker { display: none; }
+  .control summary:hover { background: #f8fafc; }
+  .control[open] summary { border-bottom: 1px solid var(--line); background: #f8fafc; }
+  .control-id { font-family: Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .control-title { font-weight: 600; font-size: 13px; }
+  .control-score { font-size: 11px; color: var(--muted); text-align: right; }
+  .control-body { padding: 17px 19px 19px; }
+  .control-body h4 { margin: 0 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); }
+  .control-body p { margin: 0 0 12px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .note { background: #f8fafc; border-left: 3px solid #9db0c6; padding: 8px 11px; font-size: 12px; }
+  .check { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; margin-top: 10px; }
+  .check-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .check-head code { color: var(--muted); }
+  .remediation { font-size: 12px; color: #3f4d61; background: #f8fafc; padding: 7px 10px; border-radius: 7px; }
+  .evidence-list { margin: 8px 0 0; padding-left: 17px; font-size: 11px; color: var(--muted); }
+  .evidence-list code { color: #40526a; }
+
+  .footer { margin-top: 34px; border-top: 1px solid var(--line); padding-top: 20px; font-size: 11px; color: var(--muted); }
+  .signoff { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 24px 0 8px; }
+  .signoff div { border-top: 1px solid #b8c5d5; padding-top: 7px; }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(3, 1fr); }
+    .side-meta { border-left: 0; border-top: 1px solid var(--line); padding: 15px 0 0; }
+    .theme-grid, .two-col { grid-template-columns: 1fr; }
+    .control summary { grid-template-columns: 64px 1fr auto; }
+    .control-score { display: none; }
+    .page { padding: 14px; }
+  }
+  @media print {
+    body { background: #fff; font-size: 11px; }
+    .page { max-width: none; padding: 0; }
+    .topbar { background: #0b1f33 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .filters, .no-print { display: none !important; }
+    .hero, .card, .theme-card, .control { break-inside: avoid; }
+    section { break-inside: auto; }
+    details.control > .control-body { display: block !important; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">CEE</span>
+      <div>
+        <h1>Control Evidence Report</h1>
+        <p>{{ run.framework_name }} &middot; {{ run.framework_version }}</p>
+      </div>
+    </div>
+    <div class="top-meta">
+      <strong>{{ report.organization or "Organization" }}</strong><span class="mode">{{ run.mode }}</span><br>
+      Run {{ run.run_id }}<br>
+      Generated {{ run.finished_at }}
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="score-wrap">
+      <div class="score-ring {{ score_class }}" style="--pct: {{ summary.score if summary.score is not none else 0 }}">
+        <div class="score-inner">
+          <strong>{{ '%.1f'|format(summary.score) if summary.score is not none else 'n/a' }}</strong>
+          <span>assurance score</span>
+        </div>
+      </div>
+      <div class="band">{{ summary.assurance_band }}</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi green"><b>{{ summary.control_status.compliant }}</b><span>Compliant</span></div>
+      <div class="kpi amber"><b>{{ summary.control_status.partial }}</b><span>Partial</span></div>
+      <div class="kpi red"><b>{{ summary.control_status.non_compliant }}</b><span>Non-compliant</span></div>
+      <div class="kpi gray"><b>{{ summary.manual_pending }}</b><span>Manual pending</span></div>
+      <div class="kpi blue"><b>{{ summary.attested_controls }}</b><span>Attested</span></div>
+      <div class="kpi purple"><b>{{ summary.control_status.error }}</b><span>Check errors</span></div>
+    </div>
+
+    <div class="side-meta">
+      <div class="meta-row"><span>Controls assessed</span><strong>{{ summary.controls_assessed }} / {{ summary.controls_total }}</strong></div>
+      <div class="meta-row"><span>Automated coverage</span><strong>{{ summary.automation_coverage_percent }}% ({{ summary.automated_controls }} controls)</strong></div>
+      <div class="meta-row"><span>Evidence artifacts</span><strong>{{ summary.evidence_count }}</strong></div>
+      <div class="meta-row"><span>Open findings</span><strong>{{ summary.findings_total }}</strong></div>
+      <div class="meta-row"><span>Prepared by</span><strong>{{ report.prepared_by or "Security Engineering" }}</strong></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Control coverage by theme <span class="sub">Assurance score excludes controls still awaiting manual evidence.</span></h2>
+    <div class="theme-grid">
+      {% for theme in themes %}
+      <div class="theme-card">
+        <div class="theme-head">
+          <h3>{{ theme.label }}</h3>
+          <span>{{ theme.assessed }}/{{ theme.total }} assessed &middot;
+            {% if theme.score is not none %}{{ '%.0f'|format(theme.score) }}%{% else %}n/a{% endif %}
+          </span>
+        </div>
+        <div class="bar">
+          {% for segment in theme.segments %}
+          <i class="seg-{{ segment.status }}" style="width: {{ segment.pct }}%" title="{{ segment.status }}: {{ segment.count }}"></i>
+          {% endfor %}
+        </div>
+        <div class="theme-legend">
+          {% for status, count in theme.counts.items() %}
+            {% if count %}
+            <span><i class="dot {{ status }}"></i>{{ status_labels[status] }} {{ count }}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2>Findings <span class="sub">{{ findings|length }} items ordered by severity</span></h2>
+    <div class="card" style="padding: 6px 0 0;">
+      {% if findings %}
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Severity</th><th>Control</th><th>Finding</th><th>Status</th><th>Remediation</th></tr>
+        </thead>
+        <tbody>
+          {% for finding in findings %}
+          <tr>
+            <td class="mono">{{ finding.id }}</td>
+            <td><span class="pill severity-{{ finding.severity }}">{{ severity_labels[finding.severity] }}</span></td>
+            <td class="mono">{{ finding.controls|join(', ') }}</td>
+            <td>
+              <strong>{{ finding.title }}</strong><br>
+              <span class="small">{{ finding.summary }}</span>
+              {% if finding.detail %}<br><span class="small muted">{{ finding.detail }}</span>{% endif %}
+            </td>
+            <td><span class="pill status-{{ finding.status }}">{{ finding.status }}</span></td>
+            <td class="small">{{ finding.remediation }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted" style="padding: 0 20px 14px;">No open findings.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section>
+    <h2>Control assessment <span class="sub">Click a control to inspect checks and evidence</span></h2>
+    <div class="filters no-print">
+      <button class="active" data-filter="all">All ({{ controls|length }})</button>
+      <button data-filter="non_compliant">Non-compliant ({{ summary.control_status.non_compliant }})</button>
+      <button data-filter="partial">Partial ({{ summary.control_status.partial }})</button>
+      <button data-filter="manual">Manual ({{ summary.manual_pending }})</button>
+      <button data-filter="attested">Attested ({{ summary.attested_controls }})</button>
+      <button data-filter="compliant">Compliant ({{ summary.control_status.compliant }})</button>
+      <button data-filter="error">Errors ({{ summary.control_status.error }})</button>
+      <button id="expand-all" style="margin-left:auto;">Expand all</button>
+    </div>
+
+    {% for control in controls %}
+    <details class="control" data-status="{{ control.status }}">
+      <summary>
+        <span class="control-id">{{ control.control_id }}</span>
+        <span class="control-title">{{ control.title }}</span>
+        <span class="pill status-{{ control.status }}">{{ status_labels[control.status] }}</span>
+        <span class="control-score">
+          {% if control.score is not none %}{{ '%.0f'|format(control.score * 100) }}%{% else %}-{% endif %}
+        </span>
+      </summary>
+      <div class="control-body">
+        <div class="two-col">
+          <div>
+            <h4>Control objective</h4>
+            <p>{{ control.objective }}</p>
+          </div>
+          <div>
+            <h4>Evidence expectation</h4>
+            <p>{{ control.evidence_expectation }}</p>
+          </div>
+        </div>
+        {% if control.note %}<p class="note">{{ control.note }}</p>{% endif %}
+
+        {% for check in control.check_results %}
+        <div class="check">
+          <div class="check-head">
+            <span class="pill status-{{ check.status }}">{{ check.status }}</span>
+            <strong>{{ check.title }}</strong>
+            <code>{{ check.check_id }}</code>
+          </div>
+          <p class="small">{{ check.summary }}</p>
+          {% if check.detail %}<p class="small muted">{{ check.detail }}</p>{% endif %}
+          {% if check.remediation %}
+          <p class="small remediation"><strong>Remediation:</strong> {{ check.remediation }}</p>
+          {% endif %}
+          {% if check.evidence %}
+          <ul class="evidence-list">
+            {% for item in check.evidence %}
+            <li>{{ item.title }} &mdash; <code>{{ item.artifact }}</code>
+              {% if item.sha256 %}(sha256 {{ item.sha256[:12] }}&hellip;){% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if control.manual_evidence %}
+        <div class="check">
+          <div class="check-head"><strong>Manual evidence</strong></div>
+          <ul class="evidence-list">
+            {% for item in control.manual_evidence %}
+            <li>
+              {{ item.file }} &mdash; {{ item.note }}
+              <span class="muted">({{ item.attested_by }}, {{ item.attested_at }})
+              {% if not item.valid %}<strong>HASH MISMATCH</strong>{% endif %}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h2>Evidence manifest <span class="sub">{{ evidence|length }} artifacts with SHA-256 integrity hashes</span></h2>
+    <div class="card" style="padding: 6px 0 0;">
+      <table>
+        <thead><tr><th>Check</th><th>Evidence</th><th>Source</th><th>Size</th><th>SHA-256</th></tr></thead>
+        <tbody>
+          {% for item in evidence %}
+          <tr>
+            <td class="mono">{{ item.check_id }}</td>
+            <td>{{ item.title }}<br><span class="small muted">{{ item.artifact }}</span></td>
+            <td class="small break">{{ item.source }}</td>
+            <td class="small">{{ item.size_bytes|filesizeformat }}</td>
+            <td class="mono small break">{{ item.sha256 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p><strong>Methodology.</strong> Automated checks collect evidence directly from configured systems.
+    Each artifact is hashed with SHA-256 and stored in the run bundle. Control status is derived from
+    mapped checks: all pass = compliant, mixed = partial, none pass = non-compliant. A control with no
+    automated check is only counted once verified manual evidence is attested. The assurance score is
+    the mean of assessed controls and intentionally excludes manual controls that still lack evidence.</p>
+    <p><strong>Limitations.</strong> This report provides technical evidence, not a certification or legal
+    opinion. Live checks depend on the credentials and scope configured at collection time. Controls
+    marked manual require document review by an auditor. Evidence should be interpreted together with
+    the organization's risk register, policies and statement of applicability.</p>
+    <div class="signoff">
+      <div>Prepared by: {{ report.prepared_by or "Security Engineering" }}</div>
+      <div>Reviewed by: {{ report.reviewer or "________________________" }}</div>
+    </div>
+    <p class="small">Control Evidence Engine v{{ run.host.tool_version }} &middot; host {{ run.host.hostname }} &middot;
+      {{ run.host.platform }} &middot; run {{ run.run_id }} &middot; bundle <code>audit-bundle.zip</code></p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.filters button[data-filter]');
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        buttons.forEach(function (other) { other.classList.remove('active'); });
+        button.classList.add('active');
+        var filter = button.getAttribute('data-filter');
+        document.querySelectorAll('details.control').forEach(function (item) {
+          item.style.display = (filter === 'all' || item.getAttribute('data-status') === filter) ? '' : 'none';
+        });
+      });
+    });
+    var expand = document.getElementById('expand-all');
+    if (expand) {
+      expand.addEventListener('click', function () {
+        var all = document.querySelectorAll('details.control');
+        var open = expand.textContent === 'Expand all';
+        all.forEach(function (item) { item.open = open; });
+        expand.textContent = open ? 'Collapse all' : 'Expand all';
+      });
+    }
+    window.addEventListener('beforeprint', function () {
+      document.querySelectorAll('details.control').forEach(function (item) { item.open = true; });
+    });
+  })();
+</script>
+</body>
+</html>

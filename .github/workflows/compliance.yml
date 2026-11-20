@@ -1,0 +1,58 @@
+name: Compliance demo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  assess:
+    name: Lint, test, assess, verify
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest -q
+
+      - name: Run demo assessment
+        run: python -m cee assess --demo
+
+      - name: Verify evidence hashes
+        run: python -m cee verify --run latest
+
+      - name: Show catalog status
+        run: python -m cee controls --run latest --theme technological
+
+      - name: Upload audit bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-evidence
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            runs/*/report.html
+            runs/*/report.md
+            runs/*/run.json
+            runs/*/audit-bundle.zip

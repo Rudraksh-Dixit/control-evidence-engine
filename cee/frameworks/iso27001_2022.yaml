@@ -1,0 +1,422 @@
+framework:
+  id: iso27001-2022
+  name: ISO/IEC 27001:2022 Annex A
+  version: "2022"
+  description: >-
+    Curated subset of 36 Annex A controls chosen because they can be evidenced by
+    engineering systems in a cloud-native SaaS environment. ISO/IEC 27001:2022
+    Annex A contains 93 controls; this catalog covers the controls most directly
+    supported by GitHub, AWS, SIEM, vulnerability-scanning and endpoint telemetry.
+  source: https://www.iso.org/standard/27001
+
+controls:
+  - id: A.5.1
+    title: Policies for information security
+    theme: organizational
+    objective: >-
+      Information security policy and topic-specific policies are defined, approved
+      by management, published, communicated and reviewed at planned intervals.
+    evidence_expectation: >-
+      Approved information security policy with version, owner, approval date and a
+      review date within the last 12 months; evidence of communication to staff.
+    references:
+      - ISO/IEC 27001:2022 Annex A 5.1
+      - ISO/IEC 27002:2022 5.1
+
+  - id: A.5.2
+    title: Information security roles and responsibilities
+    theme: organizational
+    objective: >-
+      Information security roles and responsibilities are defined and allocated
+      according to organizational needs.
+    evidence_expectation: >-
+      RACI or role definitions covering security ownership, approvals and operational
+      duties, signed off by management.
+
+  - id: A.5.3
+    title: Segregation of duties
+    theme: organizational
+    objective: >-
+      Conflicting duties and areas of responsibility are segregated to reduce
+      opportunities for unauthorized or unintentional modification or misuse.
+    evidence_expectation: >-
+      Access matrix showing production, approval and review duties are separated;
+      exception register for unavoidable conflicts.
+
+  - id: A.5.7
+    title: Threat intelligence
+    theme: organizational
+    objective: >-
+      Information relating to information security threats is collected, analysed
+      and used to inform security decisions.
+    evidence_expectation: >-
+      Threat-intelligence sources, collection cadence, dissemination records and
+      examples of intelligence driving detection or remediation decisions.
+
+  - id: A.5.9
+    title: Inventory of information and other associated assets
+    theme: organizational
+    objective: >-
+      An inventory of information and other associated assets, including owners,
+      is developed and maintained.
+    evidence_expectation: >-
+      Asset register export with owner, classification, location and criticality;
+      reconciliation evidence against cloud and endpoint inventories.
+
+  - id: A.5.10
+    title: Acceptable use of information and other associated assets
+    theme: organizational
+    objective: >-
+      Rules for the acceptable use and handling of information and other associated
+      assets are identified, documented and implemented.
+    evidence_expectation: >-
+      Acceptable use policy with acknowledged acceptance records for employees and
+      contractors.
+
+  - id: A.5.12
+    title: Classification of information
+    theme: organizational
+    objective: >-
+      Information is classified in accordance with the organization's information
+      classification scheme.
+    evidence_expectation: >-
+      Classification scheme, criteria and examples; sample assets showing assigned
+      classification labels.
+
+  - id: A.5.15
+    title: Access control
+    theme: organizational
+    objective: >-
+      Rules to control physical and logical access to information and other associated
+      assets are established and implemented based on business and security requirements.
+    evidence_expectation: >-
+      Access control policy, role model, provisioning workflow and periodic access
+      review records.
+
+  - id: A.5.17
+    title: Authentication information
+    theme: organizational
+    objective: >-
+      Allocation and management of authentication information is controlled by a
+      management process, including advising personnel on appropriate handling.
+    evidence_expectation: >-
+      Password and MFA baseline configuration, identity-provider policy export and
+      evidence that organization accounts enforce the baseline.
+    checks:
+      - github_mfa
+      - windows_password_policy
+    references:
+      - ISO/IEC 27001:2022 Annex A 5.17
+      - ISO/IEC 27002:2022 5.17
+
+  - id: A.5.19
+    title: Information security in supplier relationships
+    theme: organizational
+    objective: >-
+      Processes and procedures are defined and implemented to manage the information
+      security risks associated with the use of supplier products and services.
+    evidence_expectation: >-
+      Supplier register with risk tier, security requirements, due-diligence evidence
+      and contract clauses.
+
+  - id: A.5.23
+    title: Information security for use of cloud services
+    theme: organizational
+    objective: >-
+      Processes for acquisition, use, management and exit from cloud services are
+      established in accordance with the organization's information security requirements.
+    evidence_expectation: >-
+      Cloud service inventory, shared-responsibility mapping, configuration baseline
+      and exit plan for critical services.
+    applicability: Organizations using cloud services
+
+  - id: A.5.24
+    title: Information security incident management planning and preparation
+    theme: organizational
+    objective: >-
+      The organization plans and prepares for information security incidents by
+      defining processes, roles and responsibilities.
+    evidence_expectation: >-
+      Incident response plan, contact matrix, severity matrix, tooling readiness and
+      evidence of exercised readiness.
+
+  - id: A.5.25
+    title: Assessment and decision on information security events
+    theme: organizational
+    objective: >-
+      Information security events are assessed and classified as incidents according
+      to agreed criteria.
+    evidence_expectation: >-
+      Triage criteria and sampled event records showing classification decisions and
+      rationale.
+
+  - id: A.5.26
+    title: Response to information security incidents
+    theme: organizational
+    objective: >-
+      Information security incidents are responded to according to documented procedures.
+    evidence_expectation: >-
+      Incident records with timeline, containment, eradication, recovery, root cause
+      and lessons learned.
+
+  - id: A.5.29
+    title: Information security during disruption
+    theme: organizational
+    objective: >-
+      The organization plans how to maintain information security at an appropriate
+      level during disruption.
+    evidence_expectation: >-
+      Business continuity and disaster recovery plans with security controls, RTO/RPO
+      targets and test results.
+
+  - id: A.5.34
+    title: Privacy and protection of PII
+    theme: organizational
+    objective: >-
+      The organization identifies and meets requirements regarding the protection of
+      personally identifiable information.
+    evidence_expectation: >-
+      Data map or record of processing, lawful basis, retention schedule, privacy
+      notices and DSAR handling records.
+
+  - id: A.6.3
+    title: Information security awareness, education and training
+    theme: people
+    objective: >-
+      Personnel and relevant interested parties receive appropriate information security
+      awareness education and training and regular updates.
+    evidence_expectation: >-
+      Training curriculum, completion records, phishing-simulation results and
+      onboarding/refresh cadence.
+
+  - id: A.6.5
+    title: Responsibilities after termination or change of employment
+    theme: people
+    objective: >-
+      Information security responsibilities and duties that remain valid after
+      termination or change of employment are defined, enforced and communicated.
+    evidence_expectation: >-
+      Offboarding checklist, access revocation evidence and return-of-assets records
+      for a sample of leavers.
+
+  - id: A.7.1
+    title: Physical security perimeters
+    theme: physical
+    objective: >-
+      Security perimeters are used to protect areas that contain information and other
+      associated assets.
+    evidence_expectation: >-
+      Floor plans, perimeter controls, access-controlled zones and site inspection records.
+
+  - id: A.7.2
+    title: Physical entry
+    theme: physical
+    objective: >-
+      Secure areas are protected by appropriate entry controls and access points.
+    evidence_expectation: >-
+      Badge access lists, visitor logs, approval records and periodic access reviews
+      for secure areas.
+
+  - id: A.7.4
+    title: Physical security monitoring
+    theme: physical
+    objective: >-
+      Premises are continuously monitored for unauthorized physical access.
+    evidence_expectation: >-
+      CCTV or alarm configuration, retention period and sample monitoring records.
+
+  - id: A.7.10
+    title: Storage media
+    theme: physical
+    objective: >-
+      Storage media are managed through their lifecycle of acquisition, use, transport
+      and disposal in accordance with classification and handling requirements.
+    evidence_expectation: >-
+      Media register, encryption and handling procedures, and secure destruction
+      certificates.
+
+  - id: A.8.2
+    title: Privileged access rights
+    theme: technological
+    objective: >-
+      The allocation and use of privileged access rights are restricted and managed.
+    evidence_expectation: >-
+      Privileged account inventory, approval records, MFA enforcement and evidence
+      that root or break-glass accounts are controlled.
+    checks:
+      - aws_root_mfa
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.2
+      - ISO/IEC 27002:2022 8.2
+
+  - id: A.8.5
+    title: Secure authentication
+    theme: technological
+    objective: >-
+      Secure authentication technologies and procedures are implemented based on
+      information access restrictions and the organization's access control policy.
+    evidence_expectation: >-
+      MFA enforcement for workforce identities, password baseline and authentication
+      logs for critical systems.
+    checks:
+      - github_mfa
+      - windows_password_policy
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.5
+      - ISO/IEC 27002:2022 8.5
+
+  - id: A.8.7
+    title: Protection against malware
+    theme: technological
+    objective: >-
+      Protection against malware is implemented and supported by appropriate user
+      awareness.
+    evidence_expectation: >-
+      EDR or antivirus coverage report, policy configuration, signature update status
+      and malware incident records.
+
+  - id: A.8.8
+    title: Management of technical vulnerabilities
+    theme: technological
+    objective: >-
+      Information about technical vulnerabilities of information systems in use is
+      obtained, exposure is evaluated, and appropriate measures are taken.
+    evidence_expectation: >-
+      Vulnerability scan reports, prioritization method, remediation SLAs and evidence
+      of timely patching for critical and high findings.
+    checks:
+      - trivy_vulnerability_sla
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.8
+      - ISO/IEC 27002:2022 8.8
+
+  - id: A.8.9
+    title: Configuration management
+    theme: technological
+    objective: >-
+      Configurations, including security configurations, of hardware, software,
+      services and networks are established, documented, implemented, monitored and reviewed.
+    evidence_expectation: >-
+      Hardening baselines, configuration drift reports and approved exception records.
+
+  - id: A.8.12
+    title: Data leakage prevention
+    theme: technological
+    objective: >-
+      Data leakage prevention measures are applied to systems, networks and devices
+      that process sensitive information.
+    evidence_expectation: >-
+      Storage and network exposure controls, DLP policy configuration and evidence of
+      monitoring for sensitive data leaving controlled environments.
+    checks:
+      - aws_s3_public_block
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.12
+      - ISO/IEC 27002:2022 8.12
+
+  - id: A.8.13
+    title: Information backup
+    theme: technological
+    objective: >-
+      Backup copies of information, software and systems are maintained and regularly
+      tested in accordance with the agreed backup policy.
+    evidence_expectation: >-
+      Backup inventory, freshness against RPO, retention coverage and restore-test
+      records.
+    checks:
+      - backup_freshness
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.13
+      - ISO/IEC 27002:2022 8.13
+
+  - id: A.8.15
+    title: Logging
+    theme: technological
+    objective: >-
+      Logs that record activities, exceptions, faults and other relevant events are
+      produced, stored, protected and analysed.
+    evidence_expectation: >-
+      Centralized logging configuration, audit policy for identity events, retention
+      settings and protection against tampering.
+    checks:
+      - aws_cloudtrail
+      - windows_audit_policy
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.15
+      - ISO/IEC 27002:2022 8.15
+
+  - id: A.8.16
+    title: Monitoring activities
+    theme: technological
+    objective: >-
+      Networks, systems and applications are monitored for anomalous behaviour and
+      appropriate actions are taken to evaluate potential information security incidents.
+    evidence_expectation: >-
+      SIEM ingestion health, detection coverage against priority techniques, cloud
+      threat detection and alert triage records.
+    checks:
+      - wazuh_alert_pipeline
+      - sigma_detection_coverage
+      - aws_guardduty
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.16
+      - ISO/IEC 27002:2022 8.16
+
+  - id: A.8.20
+    title: Networks security
+    theme: technological
+    objective: >-
+      Networks and network devices are secured, managed and controlled to protect
+      information in systems and applications.
+    evidence_expectation: >-
+      Network segmentation diagram, firewall rule review, secure configuration
+      baseline and remote-access controls.
+
+  - id: A.8.24
+    title: Use of cryptography
+    theme: technological
+    objective: >-
+      Rules for the effective use of cryptography, including cryptographic key
+      management, are defined and implemented.
+    evidence_expectation: >-
+      Cryptographic standard, approved algorithms, key-management procedures and
+      inventory of where encryption is applied.
+
+  - id: A.8.28
+    title: Secure coding
+    theme: technological
+    objective: >-
+      Secure coding principles are applied to software development.
+    evidence_expectation: >-
+      Secure coding standard, SAST and dependency-scanning results, secret scanning
+      and evidence that findings are remediated.
+    checks:
+      - github_secret_scanning
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.28
+      - ISO/IEC 27002:2022 8.28
+
+  - id: A.8.32
+    title: Change management
+    theme: technological
+    objective: >-
+      Changes to information processing facilities and information systems are subject
+      to change management procedures.
+    evidence_expectation: >-
+      Change approval records, protected default branches, required peer review and
+      deployment audit trail.
+    checks:
+      - github_branch_protection
+    references:
+      - ISO/IEC 27001:2022 Annex A 8.32
+      - ISO/IEC 27002:2022 8.32
+
+  - id: A.8.34
+    title: Protection of information systems during audit testing
+    theme: technological
+    objective: >-
+      Audit tests and assurance activities on operational systems are planned and
+      agreed with appropriate management.
+    evidence_expectation: >-
+      Audit engagement plan, testing window approvals, read-only access evidence and
+      post-testing review records.

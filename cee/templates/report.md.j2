@@ -1,0 +1,113 @@
+# Control Evidence Report
+
+**Framework:** {{ run.framework_name }} ({{ run.framework_version }})
+**Organization:** {{ report.organization or "Organization" }}
+**Mode:** {{ run.mode }}
+**Run ID:** `{{ run.run_id }}`
+**Started:** {{ run.started_at }}
+**Finished:** {{ run.finished_at }}
+**Prepared by:** {{ report.prepared_by or "Security Engineering" }}
+
+---
+
+## Executive summary
+
+| Metric | Value |
+|---|---|
+| Assurance score | {% if summary.score is not none %}**{{ '%.1f'|format(summary.score) }}%** ({{ summary.assurance_band }}){% else %}n/a{% endif %} |
+| Controls assessed | {{ summary.controls_assessed }} / {{ summary.controls_total }} |
+| Automated coverage | {{ summary.automation_coverage_percent }}% ({{ summary.automated_controls }} controls) |
+| Evidence artifacts | {{ summary.evidence_count }} |
+| Open findings | {{ summary.findings_total }} |
+
+**Control status**
+
+| Compliant | Partial | Non-compliant | Manual pending | Attested | Error |
+|---:|---:|---:|---:|---:|---:|
+| {{ summary.control_status.compliant }} | {{ summary.control_status.partial }} | {{ summary.control_status.non_compliant }} | {{ summary.manual_pending }} | {{ summary.attested_controls }} | {{ summary.control_status.error }} |
+
+The assurance score is calculated across automated controls and verified manual attestations.
+{{ summary.manual_pending }} control(s) still require manual evidence and are excluded from the score.
+
+---
+
+## Coverage by theme
+
+| Theme | Assessed | Total | Score | Compliant | Partial | Non-compliant | Manual |
+|---|---:|---:|---:|---:|---:|---:|---:|
+{% for theme in themes -%}
+| {{ theme.label }} | {{ theme.assessed }} | {{ theme.total }} | {% if theme.score is not none %}{{ '%.0f'|format(theme.score) }}%{% else %}n/a{% endif %} | {{ theme.counts.compliant }} | {{ theme.counts.partial }} | {{ theme.counts.non_compliant }} | {{ theme.counts.manual }} |
+{% endfor %}
+
+---
+
+## Findings
+
+{% if findings -%}
+| ID | Severity | Controls | Finding | Remediation |
+|---|---|---|---|---|
+{% for finding in findings -%}
+| {{ finding.id }} | {{ severity_labels[finding.severity] }} | {{ finding.controls|join(', ') }} | **{{ finding.title }}** - {{ finding.summary }} | {{ finding.remediation }} |
+{% endfor %}
+{% else -%}
+No open findings.
+{% endif %}
+
+---
+
+## Control assessment
+
+{% for control in controls -%}
+### {{ control.control_id }} - {{ control.title }}
+
+**Status:** {{ status_labels[control.status] }}{% if control.score is not none %} ({{ '%.0f'|format(control.score * 100) }}%){% endif %}
+
+{{ control.objective }}
+
+*Evidence expectation:* {{ control.evidence_expectation }}
+
+{% if control.note -%}
+> {{ control.note }}
+
+{% endif -%}
+{% for check in control.check_results -%}
+- **{{ check.title }}** (`{{ check.check_id }}`) - {{ check.status|upper }}: {{ check.summary }}
+{% if check.detail %}  - Detail: {{ check.detail }}
+{% endif %}{% if check.remediation %}  - Remediation: {{ check.remediation }}
+{% endif %}{% for item in check.evidence %}  - Evidence: `{{ item.artifact }}` (sha256 `{{ item.sha256 }}`)
+{% endfor %}{% endfor -%}
+{% for item in control.manual_evidence -%}
+- **Manual evidence:** {{ item.file }} - {{ item.note }} ({{ item.attested_by }}, {{ item.attested_at }}){% if not item.valid %} - **HASH MISMATCH**{% endif %}
+{% endfor %}
+{% endfor -%}
+
+---
+
+## Evidence manifest
+
+| Check | Evidence | Artifact | SHA-256 |
+|---|---|---|---|
+{% for item in evidence -%}
+| `{{ item.check_id }}` | {{ item.title }} | `{{ item.artifact }}` | `{{ item.sha256 }}` |
+{% endfor %}
+
+---
+
+## Methodology and limitations
+
+Automated checks collect evidence directly from the configured systems at assessment time.
+Every artifact is stored under `evidence/` and hashed with SHA-256. Re-run `python -m cee verify`
+to detect any modification after collection. Control status is derived from mapped checks:
+
+- **Compliant** - every mapped check passed.
+- **Partial** - at least one check passed and at least one failed or was inconclusive.
+- **Non-compliant** - no mapped check passed.
+- **Attested** - no automated check, but verified manual evidence is registered.
+- **Manual pending** - no automated check and no evidence yet; excluded from the score.
+- **Error** - a check could not run or evidence failed integrity verification.
+
+This report is technical evidence, not a certification or legal opinion. Live checks depend on the
+credentials and scope configured at collection time. Manual controls require document review by an
+auditor and should be read together with the risk register, policies and statement of applicability.
+
+**Reviewed by:** {{ report.reviewer or "________________________" }}

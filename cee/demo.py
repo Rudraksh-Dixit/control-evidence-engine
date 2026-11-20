@@ -1,0 +1,483 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+from cee.models import to_iso
+
+SIGMA_RULES: dict[str, str] = {
+    "encoded-powershell.yml": """
+title: Encoded PowerShell Command Execution
+id: 9b1f0c2a-1111-4a01-9a01-000000000001
+status: experimental
+description: Detects PowerShell executed with an encoded command parameter.
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith: '\\\\powershell.exe'
+    CommandLine|contains: ' -enc'
+  condition: selection
+tags:
+  - attack.execution
+  - attack.t1059.001
+level: high
+""",
+    "valid-account-abuse.yml": """
+title: Valid Account Login from New Country
+id: 9b1f0c2a-1111-4a01-9a01-000000000002
+status: experimental
+description: Flags successful authentication from an unusual geographic location.
+logsource:
+  product: azure
+  service: signinlogs
+detection:
+  selection:
+    ResultType: 0
+    RiskLevelDuringSignIn: high
+  condition: selection
+tags:
+  - attack.initial_access
+  - attack.t1078
+level: medium
+""",
+    "password-spray.yml": """
+title: Password Spray Against Multiple Accounts
+id: 9b1f0c2a-1111-4a01-9a01-000000000003
+status: stable
+description: Multiple accounts fail authentication from a single source in a short window.
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+  timeframe: 5m
+  condition: selection | count() by IpAddress > 20
+tags:
+  - attack.credential_access
+  - attack.t1110.003
+level: high
+""",
+    "web-exploit-attempt.yml": """
+title: Web Exploitation Attempt Against Public Application
+id: 9b1f0c2a-1111-4a01-9a01-000000000004
+status: experimental
+description: Detects common exploit payloads in web server request paths.
+logsource:
+  category: webserver
+detection:
+  selection:
+    cs-method: GET
+    cs-uri-query|contains:
+      - '../'
+      - 'union select'
+      - '${jndi:'
+  condition: selection
+tags:
+  - attack.initial_access
+  - attack.t1190
+level: high
+""",
+    "scheduled-task-persistence.yml": """
+title: Scheduled Task Created by Non-System Account
+id: 9b1f0c2a-1111-4a01-9a01-000000000005
+status: experimental
+description: Detects schtasks used to establish persistence.
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4698
+  filter:
+    SubjectUserName|endswith: '$'
+  condition: selection and not filter
+tags:
+  - attack.persistence
+  - attack.t1053.005
+level: medium
+""",
+    "c2-application-protocol.yml": """
+title: Outbound Connection to Rare Destination on Common Protocol
+id: 9b1f0c2a-1111-4a01-9a01-000000000006
+status: experimental
+description: Flags repeated HTTPS beaconing to a low-prevalence destination.
+logsource:
+  category: proxy
+detection:
+  selection:
+    DestinationPort: 443
+  condition: selection | count() by DestinationHost > 200
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+level: medium
+""",
+    "ingress-tool-transfer.yml": """
+title: Tool Transfer via Certutil or Bitsadmin
+id: 9b1f0c2a-1111-4a01-9a01-000000000007
+status: stable
+description: Detects living-off-the-land binaries used to download payloads.
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith:
+      - '\\\\certutil.exe'
+      - '\\\\bitsadmin.exe'
+    CommandLine|contains:
+      - 'http://'
+      - 'https://'
+  condition: selection
+tags:
+  - attack.command_and_control
+  - attack.t1105
+level: high
+""",
+    "ransomware-encryption.yml": """
+title: Mass File Encryption Activity
+id: 9b1f0c2a-1111-4a01-9a01-000000000008
+status: experimental
+description: Detects high-volume file writes with changed extensions.
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    EventID: 11
+    TargetFilename|endswith:
+      - '.locked'
+      - '.encrypted'
+  condition: selection | count() > 100
+tags:
+  - attack.impact
+  - attack.t1486
+level: critical
+""",
+}
+
+DEMO_POLICY = """# Information Security Policy (Demo)
+
+**Document ID:** POL-ISMS-001
+**Version:** 2.1
+**Owner:** Chief Information Security Officer
+**Approved by:** Audit and Risk Committee
+**Approval date:** 2026-10-15
+**Next review:** 2027-10-15
+
+## Purpose
+
+This policy defines how Acme SaaS protects the confidentiality, integrity and
+availability of customer and company information. It applies to all employees,
+contractors and third parties with access to Acme systems.
+
+## Commitments
+
+1. Information security objectives are reviewed at least annually.
+2. Every workforce identity must use multi-factor authentication.
+3. Production changes require peer review and automated testing.
+4. Critical vulnerabilities are remediated within seven days.
+5. Security incidents are triaged within one hour of detection.
+
+## Review
+
+The CISO maintains this policy and reports compliance to the Audit and Risk
+Committee each quarter.
+
+> Demo document generated by Control Evidence Engine. Not a real policy.
+"""
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _short_ts(now: datetime, days: int = 0, hours: int = 0) -> str:
+    return to_iso(now - timedelta(days=days, hours=hours)) or ""
+
+
+def materialize(root: Path, now: datetime) -> None:
+    """Create a realistic synthetic company used by demo mode.
+
+    All timestamps are derived from the assessment time so freshness checks stay
+    meaningful no matter when the demo is run.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+
+    _write_json(
+        root / "github_org.json",
+        {
+            "org": "acme-saas",
+            "repo": "payments-api",
+            "default_branch": "main",
+            "members_2fa_known": True,
+            "members": [
+                {"login": "rudraksh-d", "role": "admin", "two_factor_enabled": True},
+                {"login": "ops-oncall", "role": "admin", "two_factor_enabled": False},
+                {"login": "priya-dev", "role": "member", "two_factor_enabled": True},
+                {"login": "sam-backend", "role": "member", "two_factor_enabled": True},
+                {"login": "ana-frontend", "role": "member", "two_factor_enabled": True},
+                {"login": "contractor-raj", "role": "member", "two_factor_enabled": False},
+                {"login": "mei-sre", "role": "member", "two_factor_enabled": True},
+                {"login": "tom-data", "role": "member", "two_factor_enabled": True},
+                {"login": "qa-bot", "role": "member", "two_factor_enabled": True},
+            ],
+            "repository": {
+                "name": "payments-api",
+                "private": True,
+                "branch_protection": {
+                    "enabled": True,
+                    "required_approving_review_count": 0,
+                    "dismiss_stale_reviews": False,
+                    "require_code_owner_reviews": False,
+                    "enforce_admins": False,
+                    "allow_force_pushes": False,
+                    "required_status_checks": True,
+                },
+                "security_and_analysis": {
+                    "secret_scanning": "enabled",
+                    "secret_scanning_push_protection": "enabled",
+                },
+            },
+            "collected_at": to_iso(now),
+        },
+    )
+
+    _write_json(
+        root / "aws_config.json",
+        {
+            "account_id": "123456789012",
+            "regions": ["ap-south-1", "us-east-1"],
+            "cloudtrail": {
+                "trails": [
+                    {
+                        "name": "acme-org-trail",
+                        "home_region": "ap-south-1",
+                        "is_multi_region": False,
+                        "log_file_validation": True,
+                        "is_logging": True,
+                        "management_events": True,
+                        "read_write_type": "All",
+                    }
+                ]
+            },
+            "iam": {
+                "root_mfa_enabled": True,
+                "root_access_keys": False,
+                "password_policy": {
+                    "minimum_password_length": 14,
+                    "max_password_age": 90,
+                    "password_reuse_prevention": 24,
+                    "require_symbols": True,
+                    "require_numbers": True,
+                },
+            },
+            "s3_buckets": [
+                {
+                    "name": "acme-prod-customer-data",
+                    "encryption": "aws:kms",
+                    "public_access_block": {
+                        "block_public_acls": True,
+                        "block_public_policy": True,
+                        "ignore_public_acls": True,
+                        "restrict_public_buckets": True,
+                    },
+                },
+                {
+                    "name": "acme-marketing-assets",
+                    "encryption": "none",
+                    "public_access_block": {
+                        "block_public_acls": False,
+                        "block_public_policy": False,
+                        "ignore_public_acls": False,
+                        "restrict_public_buckets": False,
+                    },
+                },
+            ],
+            "guardduty": {
+                "enabled": True,
+                "detectors": ["detector-ap-south-1", "detector-us-east-1"],
+                "regions": ["ap-south-1", "us-east-1"],
+            },
+        },
+    )
+
+    _write_json(
+        root / "trivy_report.json",
+        {
+            "SchemaVersion": 2,
+            "ArtifactName": "acme/payments-api:2.14.0",
+            "ArtifactType": "container_image",
+            "Results": [
+                {
+                    "Target": "acme/payments-api:2.14.0 (alpine 3.20.3)",
+                    "Class": "os-pkgs",
+                    "Type": "alpine",
+                    "Vulnerabilities": [
+                        {
+                            "VulnerabilityID": "CVE-2026-1101",
+                            "PkgName": "openssl",
+                            "InstalledVersion": "3.3.1-r2",
+                            "FixedVersion": "3.3.2-r0",
+                            "Severity": "CRITICAL",
+                            "Title": "Remote code execution in TLS handshake parsing",
+                            "PublishedDate": _short_ts(now, days=21),
+                        },
+                        {
+                            "VulnerabilityID": "CVE-2026-1102",
+                            "PkgName": "libcrypto3",
+                            "InstalledVersion": "3.3.1-r2",
+                            "FixedVersion": "3.3.2-r0",
+                            "Severity": "CRITICAL",
+                            "Title": "Heap overflow in X.509 certificate validation",
+                            "PublishedDate": _short_ts(now, days=2),
+                        },
+                        {
+                            "VulnerabilityID": "CVE-2026-2201",
+                            "PkgName": "curl",
+                            "InstalledVersion": "8.8.0-r0",
+                            "FixedVersion": "8.9.1-r0",
+                            "Severity": "HIGH",
+                            "Title": "Authentication bypass on redirect",
+                            "PublishedDate": _short_ts(now, days=45),
+                        },
+                        {
+                            "VulnerabilityID": "CVE-2026-2202",
+                            "PkgName": "busybox",
+                            "InstalledVersion": "1.36.1-r1",
+                            "FixedVersion": "1.36.1-r2",
+                            "Severity": "HIGH",
+                            "Title": "Denial of service in ash applet",
+                            "PublishedDate": _short_ts(now, days=5),
+                        },
+                        {
+                            "VulnerabilityID": "CVE-2026-3301",
+                            "PkgName": "zlib",
+                            "InstalledVersion": "1.3.1-r0",
+                            "FixedVersion": "1.3.1-r1",
+                            "Severity": "MEDIUM",
+                            "Title": "Out-of-bounds read in inflate",
+                            "PublishedDate": _short_ts(now, days=60),
+                        },
+                    ],
+                }
+            ],
+        },
+    )
+
+    alerts = [
+        {
+            "timestamp": _short_ts(now, hours=1),
+            "rule": {"id": "5710", "level": 12, "description": "Multiple failed logins followed by a successful login"},
+            "agent": {"name": "web-01"},
+            "mitre": {"technique": ["T1110"]},
+        },
+        {
+            "timestamp": _short_ts(now, hours=2),
+            "rule": {"id": "92052", "level": 10, "description": "PowerShell encoded command executed"},
+            "agent": {"name": "fin-laptop-04"},
+            "mitre": {"technique": ["T1059.001"]},
+        },
+        {
+            "timestamp": _short_ts(now, hours=3),
+            "rule": {"id": "100210", "level": 7, "description": "Scheduled task created by non-system account"},
+            "agent": {"name": "build-runner-02"},
+            "mitre": {"technique": ["T1053.005"]},
+        },
+        {
+            "timestamp": _short_ts(now, hours=4),
+            "rule": {"id": "31103", "level": 6, "description": "Multiple web requests with encoded traversal sequences"},
+            "agent": {"name": "edge-proxy-01"},
+            "mitre": {"technique": ["T1190"]},
+        },
+        {
+            "timestamp": _short_ts(now, hours=5),
+            "rule": {"id": "100305", "level": 8, "description": "Outbound connection to low-prevalence destination"},
+            "agent": {"name": "payments-api-7c9"},
+            "mitre": {"technique": ["T1071.001"]},
+        },
+        {
+            "timestamp": _short_ts(now, hours=6),
+            "rule": {"id": "5501", "level": 5, "description": "Successful sudo to root"},
+            "agent": {"name": "bastion-01"},
+            "mitre": {"technique": ["T1078"]},
+        },
+    ]
+    (root / "wazuh_alerts.jsonl").write_text(
+        "\n".join(json.dumps(alert) for alert in alerts) + "\n", encoding="utf-8"
+    )
+
+    sigma_dir = root / "sigma_rules"
+    sigma_dir.mkdir(parents=True, exist_ok=True)
+    for name, content in SIGMA_RULES.items():
+        (sigma_dir / name).write_text(content.lstrip(), encoding="utf-8")
+
+    backup_dir = root / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    for index in range(9):
+        modified = now - timedelta(hours=6 + index * 24)
+        path = backup_dir / f"acme-db-{modified.strftime('%Y%m%d')}.sql.gz"
+        path.write_bytes(b"demo backup payload\n" * 16)
+        timestamp = modified.timestamp()
+        os.utime(path, (timestamp, timestamp))
+
+    (root / "net_accounts.txt").write_text(
+        """
+User account information for \\\\ACME-WS01
+User name                                    Administrator
+
+Minimum password length:                     8
+Maximum password age (days):                 60
+Lockout threshold:                           5
+Lockout duration (minutes):                  30
+Length of password history maintained:       24
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    (root / "auditpol.txt").write_text(
+        """
+System audit policy
+Category/Subcategory                      Setting
+  Account Logon
+    Credential Validation                  Success and Failure
+  Logon/Logoff
+    Logon                                  Success and Failure
+    Logoff                                 Success
+    Account Lockout                        Success and Failure
+    Special Logon                          Success
+  Policy Change
+    Audit Policy Change                    Success
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    manual_dir = root / "manual"
+    manual_dir.mkdir(parents=True, exist_ok=True)
+    policy_path = manual_dir / "information-security-policy.md"
+    policy_path.write_text(DEMO_POLICY, encoding="utf-8")
+    digest = hashlib.sha256(policy_path.read_bytes()).hexdigest()
+    _write_json(
+        manual_dir / "attestations.json",
+        {
+            "framework": "iso27001-2022",
+            "attestations": [
+                {
+                    "control_id": "A.5.1",
+                    "file": "information-security-policy.md",
+                    "sha256": digest,
+                    "note": "Approved by the Audit and Risk Committee; next review 2027-10-15.",
+                    "attested_by": "Demo CISO",
+                    "attested_at": to_iso(now - timedelta(days=10)),
+                }
+            ],
+        },
+    )
